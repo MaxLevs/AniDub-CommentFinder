@@ -18,6 +18,7 @@
 	const max = nav ? +nav.lastElementChild.innerHTML : 1;
 	let bestComm;
 	let news_id;
+	let onLoadEvent = new Event("ad_finderonload");
 
 	function Indicate(text = "ИЩЕМ?", dur = 1000) {
 		this.link = document.createElement('div');
@@ -43,18 +44,15 @@
 			this.link.textContent = "ПОИСК";
 		};
 
-		this.stopAnimate = (resp) => {
+		this.stopAnimate = (state) => {
 			clearInterval(this.animToken);
-			let state = 0;
-			if (resp && ~resp.indexOf(-1)){
-				state = 1;
-			}
 			switch (state) {
 				case 1:
 					this.link.style.backgroundColor = "#c73f4c";
 					this.link.textContent = "ОШИБКА";
 					break;
 
+				case 0:
 				default:
 					this.link.style.backgroundColor = "#6fae18";
 					this.link.textContent = "НАЙДЕНО";
@@ -166,19 +164,28 @@
 		var activateIndicator = () => {
 			indicator.link.style.cursor = "default";
 			indicator.animate();
-			ad_searchManager().then(indicator.stopAnimate);
+			ad_searchManager().then((resp)=>{
+				let state = 0;
+				if(resp && ~resp.indexOf(-1)){
+					state = 1;
+				}
+				indicator.stopAnimate(state);
+				return resp;
+			});
 			indicator.link.removeEventListener('click', activateIndicator);
 		};
 		indicator.link.addEventListener('click', activateIndicator);
 
+		//API
 		w.ad_searchManager = ad_searchManager;
-	} else
-	if ((new RegExp('/index.php?[^/]*do=lastcomments[^/]*$')).test(ad_uri)) {
+	}
+	else if ((new RegExp('/index.php?[^/]*do=lastcomments[^/]*$')).test(ad_uri)) {
 		var mar = 12;
 		var list = document.getElementById("dle-comments-list").children;
 
 		for (var point of list) {
-			if (!point.innerHTML) continue;
+			if (!(/comment-id-\d+/.test(point.id))) continue;
+
 			var indicatorBox = document.createElement("div");
 			var indicatorMar = document.createElement("div");
 			let indicator = new Indicate("НАЙТИ");
@@ -196,42 +203,41 @@
 			indicatorBox.appendChild(indicatorMar);
 			indicatorBox.appendChild(indicator.link);
 
-			var goToLook = ((point, page)=>{
-				return () => {
-					let targetPage = w.open(point.querySelector('.comm_title').children[1].href);
-					targetPage.document.body.onload = () => {
-						//console.log(targetPage.location.pathname.match(/\d*-/)[0].match(/\d*/)[0], page);
-						targetPage.CommentsPage(page, targetPage.location.pathname.match(/\d*-/)[0].match(/\d*/)[0]);
-					};
-				};
-			});
+			var goToLook = (point, page)=>{
+				let targetPage = w.open(point.querySelector('.comm_title').children[1].href);
+				var indicator = this;
+				targetPage.addEventListener("ad_finderonload", function doEv () {
+					console.log(targetPage.location.pathname.match(/\d*-/)[0].match(/\d*/)[0], page);
+					targetPage.CommentsPage(page, targetPage.location.pathname.match(/\d*-/)[0].match(/\d*/)[0]);
+					targetPage.removeEventListener("ad_finderonload", doEv);
+				});
+			};
 
-			indicator.link.onclick = ((point)=>{
+			var goToSearch = (point)=>{
 				return function () {
 					let targetPage = w.open(point.querySelector('.comm_title').children[1].href);
 					var indicator = this;
-					targetPage.document.body.onload = () => {
-						targetPage.ad_searchManager(point.id).then((resp)=>{
+					targetPage.addEventListener("ad_finderonload",  function doEv () {
+						let page = null;
+						targetPage.ad_searchManager(point.id).then((resp) => {
 							let state = 0;
-							if (~resp.indexOf(-1)){
+							if(resp && ~resp.indexOf(-1)){
 								state = 1;
 							}
-							switch (state) {
-								case 1:
-									indicator.style.backgroundColor = "#c73f4c";
-									indicator.textContent = "ОШИБКА";
-									break;
-
-								default:
-									indicator.style.backgroundColor = "#6fae18";
-									indicator.textContent = "НАЙДЕНО";
-									break;
-							}
-							indicator.onclick = goToLook(point, resp[0]);
+							indicator.stopAnimate(state);
+							return resp;
+						}).then((resp)=>{
+							indicator.link.removeEventListener('click', goToSearch);
+							indicator.link.addEventListener('click', goToLook.bind(indicator, point, resp[0]));
 						});
-					};
+						targetPage.removeEventListener("ad_finderonload", doEv);
+					});
 				};
-			})(point);
+			};
+
+			indicator.link.addEventListener('click', goToSearch.bind(indicator, point));
 		}
 	}
+
+	w.dispatchEvent(onLoadEvent);
 })(window);
