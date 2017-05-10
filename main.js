@@ -12,6 +12,7 @@
 
 
 (function(w) {
+	'use strict';
 	const _PAGE_CACHE = [];
 	const min = 1;
 	const nav = w.document.getElementsByClassName('navigation')[0];
@@ -203,22 +204,13 @@
 			indicatorBox.appendChild(indicatorMar);
 			indicatorBox.appendChild(indicator.link);
 
-			var goToLook = (point, page)=>{
+			function goToSearch(event){
+				let indicator = this.indicator;
+				let point = this.point;
 				let targetPage = w.open(point.querySelector('.comm_title').children[1].href);
-				var indicator = this;
-				targetPage.addEventListener("ad_finderonload", function doEv () {
-					console.log(targetPage.location.pathname.match(/\d*-/)[0].match(/\d*/)[0], page);
-					targetPage.CommentsPage(page, targetPage.location.pathname.match(/\d*-/)[0].match(/\d*/)[0]);
-					targetPage.removeEventListener("ad_finderonload", doEv);
-				});
-			};
-
-			var goToSearch = (point)=>{
-				return function () {
-					let targetPage = w.open(point.querySelector('.comm_title').children[1].href);
-					var indicator = this;
+				if (!_PAGE_CACHE[point.id]){
+					indicator.animate();
 					targetPage.addEventListener("ad_finderonload",  function doEv () {
-						let page = null;
 						targetPage.ad_searchManager(point.id).then((resp) => {
 							let state = 0;
 							if(resp && ~resp.indexOf(-1)){
@@ -227,15 +219,21 @@
 							indicator.stopAnimate(state);
 							return resp;
 						}).then((resp)=>{
-							indicator.link.removeEventListener('click', goToSearch);
-							indicator.link.addEventListener('click', goToLook.bind(indicator, point, resp[0]));
+							_PAGE_CACHE[point.id] = resp[0];
 						});
 						targetPage.removeEventListener("ad_finderonload", doEv);
 					});
-				};
-			};
+				} else {
+					targetPage.addEventListener("ad_finderonload", function doEv () {
+						console.log(targetPage.location.pathname.match(/\d*-/)[0].match(/\d*/)[0], _PAGE_CACHE[point.id]);
+						targetPage.CommentsPage(_PAGE_CACHE[point.id], targetPage.location.pathname.match(/\d*-/)[0].match(/\d*/)[0]);
+						targetPage.removeEventListener("ad_finderonload", doEv);
+					});
+				}
+			}
 
-			indicator.link.addEventListener('click', goToSearch.bind(indicator, point));
+
+			indicator.link.addEventListener('click', {handleEvent: goToSearch, indicator:indicator, point:point});
 		}
 	}
 
