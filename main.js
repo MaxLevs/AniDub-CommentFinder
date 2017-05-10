@@ -4,7 +4,7 @@
 // @version      3.2.1
 // @description  Поисковик комментов по id. Ищет комменты из топа на странице с анимой или из списка последних комментов любого пользователя.
 // @author       MaxLevs
-// @match        online.anidub.com/*
+// @match        *://online.anidub.com/*
 // @grant        none
 // @noframes
 // @run-at document-idle
