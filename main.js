@@ -14,7 +14,8 @@
 (function(w) {
 	const _PAGE_CACHE = [];
 	const min = 1;
-	const max = +w.document.getElementsByClassName('navigation')[0].lastElementChild.innerHTML;
+	const nav = w.document.getElementsByClassName('navigation')[0];
+	const max = nav ? +nav.lastElementChild.innerHTML : 1;
 	let bestComm;
 	let news_id;
 
@@ -23,7 +24,7 @@
 		this.link.id = 'ad-bcom-finder';
 		this.link.align = 'center';
 		this.link.textContent = text;
-		this.link.style.cssText = `width: 100px;height: 20px;line-height: 20px;background-color: #c73f4c;color: #fff;font-weight: 600;float: right;border-radius: 10px;user-select: none;transition-property: background-color;transition-duration: ${dur}ms;cursor: pointer;`;
+		this.link.style.cssText = `width: 100px;height: 20px;line-height: 20px;background-color: #c73f4c;color: #fff;font-weight: 600;border-radius: 10px;user-select: none;transition-property: background-color;transition-duration: ${dur}ms;cursor: pointer;`;
 
 		this.animToken = null;
 
@@ -61,6 +62,7 @@
 			}
 		};
 	}
+
 	var ad_getComments = (cstart, news_id) => {
 		return new Promise((responsed) => {
 			if (!_PAGE_CACHE[cstart]){
@@ -146,13 +148,14 @@
 	var ad_uri = w.location.href;
 	if ((new RegExp('/[^/]+/[^/]+/[^/]+$')).test(ad_uri)) {
 		//Вставляем индикатор
-		var indicator = new Indicate("ИЩЕМ?");
+		let indicator = new Indicate("ИЩЕМ?");
+		indicator.link.style.float = 'right';
 		let refPoint = document.getElementById('ad-refPoint');
 		refPoint = document.getElementsByClassName('comm_best')[0].previousElementSibling.previousElementSibling.previousElementSibling;
 		refPoint.style.width = '400px';
 		refPoint.style.float = 'left';
 		refPoint.id = 'ad-refPoint';
-		refPoint.style.marginBottom = 14px;
+		refPoint.style.marginBottom = '14px';
 		refPoint.parentNode.insertBefore(indicator.link, refPoint.nextSibling);
 
 		//Получаем нужные данные
@@ -163,43 +166,35 @@
 		var activateIndicator = () => {
 			indicator.link.style.cursor = "default";
 			indicator.animate();
-			ad_searchManager().then(indicator.stopAnimate);;
+			ad_searchManager().then(indicator.stopAnimate);
 			indicator.link.removeEventListener('click', activateIndicator);
 		};
 		indicator.link.addEventListener('click', activateIndicator);
 
 		w.ad_searchManager = ad_searchManager;
-	} else 
+	} else
 	if ((new RegExp('/index.php?[^/]*do=lastcomments[^/]*$')).test(ad_uri)) {
 		var mar = 12;
 		var list = document.getElementById("dle-comments-list").children;
 
 		for (var point of list) {
 			if (!point.innerHTML) continue;
-
 			var indicatorBox = document.createElement("div");
 			var indicatorMar = document.createElement("div");
-			indicator = document.createElement("div");
-
+			let indicator = new Indicate("НАЙТИ");
 			{
 				indicatorMar.id = 'ad_indicatorMar';
 				indicatorMar.style.height = `${mar}px`;
 			}
 			{
-				indicatorBox.style.height = '40px';
+				indicatorBox.style.height = `${mar + (+indicator.link.style.height.match(/\d*/)[0])}px`;
 				indicatorBox.style.backgroundColor = "#fff";
-			}
-			{
-				indicator.id = 'ad_indicator';
-				indicator.textContent = 'НАЙТИ';
-				indicator.align = 'center';
-				indicator.style.margin = '';
 			}
 
 			point.querySelector('.commleft').align = 'center';
 			point.querySelector('.commleft').appendChild(indicatorBox);
 			indicatorBox.appendChild(indicatorMar);
-			indicatorBox.appendChild(indicator);
+			indicatorBox.appendChild(indicator.link);
 
 			var goToLook = ((point, page)=>{
 				return () => {
@@ -211,7 +206,7 @@
 				};
 			});
 
-			indicator.onclick = ((point)=>{
+			indicator.link.onclick = ((point)=>{
 				return function () {
 					let targetPage = w.open(point.querySelector('.comm_title').children[1].href);
 					var indicator = this;
