@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AniDub-CommentFinder
 // @namespace    MaxLevs
-// @version      3.2.1
+// @version      3.2.2
 // @description  Поисковик комментов по id. Ищет комменты из топа на странице с анимой или из списка последних комментов любого пользователя.
 // @author       MaxLevs
 // @match        *://online.anidub.com/*
