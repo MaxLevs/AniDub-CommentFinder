@@ -23,17 +23,21 @@
   let onLoadEvent = new Event("ad_finderonload");
 
   function ad_showComment(cstart,news_id,comm_id) {
-    $.get(dle_root+"engine/ajax/comments.php", {cstart:cstart,news_id:news_id,skin:dle_skin},
-        function(data){
-      if(!isNaN(cstart)&&!isNaN(news_id)){$('#dle-comm-link').unbind('click');
-      $('#dle-comm-link').bind('click',function(){CommentsPage(cstart,news_id);return false;});}
-      $("#dle-comments-list").html(data.comments);
-      $(".dle-comments-navigation").html(data.navigation);
-      if (comm_id && /comment-id-\d+/.test(comm_id)) {
-        document.getElementById("dle-comments-list").querySelector(`#${comm_id}`).scrollIntoView();
-      }
-      w.dispatchEvent(new Event('ad_oncommentdraw'));
-    },"json");
+    $.get(dle_root+"engine/ajax/comments.php",
+      {cstart:cstart,news_id:news_id,skin:dle_skin},
+      function(data){
+        if(!isNaN(cstart)&&!isNaN(news_id)){
+          $('#dle-comm-link').unbind('click');
+          $('#dle-comm-link').bind('click',function(){CommentsPage(cstart,news_id);return false;});
+        }
+        $("#dle-comments-list").html(data.comments);
+        $(".dle-comments-navigation").html(data.navigation);
+        if (comm_id && /comment-id-\d+/.test(comm_id)) {
+          document.getElementById("dle-comments-list").querySelector(`#${comm_id}`).scrollIntoView();
+        }
+        w.dispatchEvent(new Event('ad_oncommentdraw'));
+      },
+    "json");
     return false;
   }
 
