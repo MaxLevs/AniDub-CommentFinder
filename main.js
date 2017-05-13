@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         AniDub-CommentFinder
 // @namespace    MaxLevs
-// @version      3.2.3
+// @version      3.3.0
 // @description  Поисковик комментов по id. Ищет комменты из топа на странице с анимой или из списка последних комментов любого пользователя.
 // @author       MaxLevs
 // @match        *://online.anidub.com/*
@@ -15,31 +15,13 @@
   'use strict';
   const _PAGE_CACHE = [];
   const _NEWS_CACHE = [];
+  const _COMMENT_LIST_CACHE = [];
   const min = 1;
   const nav = w.document.getElementsByClassName('navigation')[0];
   const max = nav ? +nav.lastElementChild.innerHTML : 1;
   let bestComm;
   let news_id;
   let onLoadEvent = new Event("ad_finderonload");
-
-  function ad_showComment(cstart,news_id,comm_id) {
-    $.get(dle_root+"engine/ajax/comments.php",
-      {cstart:cstart,news_id:news_id,skin:dle_skin},
-      function(data){
-        if(!isNaN(cstart)&&!isNaN(news_id)){
-          $('#dle-comm-link').unbind('click');
-          $('#dle-comm-link').bind('click',function(){CommentsPage(cstart,news_id);return false;});
-        }
-        $("#dle-comments-list").html(data.comments);
-        $(".dle-comments-navigation").html(data.navigation);
-        if (comm_id && /comment-id-\d+/.test(comm_id)) {
-          document.getElementById("dle-comments-list").querySelector(`#${comm_id}`).scrollIntoView();
-        }
-        w.dispatchEvent(new Event('ad_oncommentdraw'));
-      },
-    "json");
-    return false;
-  }
 
   function Indicate(text = "ИЩЕМ?", dur = 1000) {
     this.link = document.createElement('div');
@@ -82,22 +64,41 @@
     };
   }
 
-  var ad_getComments = (cstart, news_id) => {
+  var ad_getCommentsList = (cstart, news_id) => {
     return new Promise((responsed) => {
-      if (!_PAGE_CACHE[cstart]){
+      if (!_COMMENT_LIST_CACHE[cstart]){
         $.get(dle_root+"engine/ajax/comments.php", {cstart:cstart,news_id:news_id,skin:dle_skin}, (data) => {
-          _PAGE_CACHE[cstart] = data.comments;
-          responsed(data.comments);
+          _COMMENT_LIST_CACHE[cstart] = data;
+          responsed(data);
         },"json");
       } else {
-        responsed(_PAGE_CACHE[cstart]);
+        responsed(_COMMENT_LIST_CACHE[cstart]);
       }
     });
   };
 
+  function ad_showComment(cstart,news_id,comm_id) {
+    ad_getCommentsList(cstart, news_id).then(
+      function(data){
+        if(!isNaN(cstart)&&!isNaN(news_id)){
+          $('#dle-comm-link').unbind('click');
+          $('#dle-comm-link').bind('click',function(){CommentsPage(cstart,news_id);return false;});
+        }
+        $("#dle-comments-list").html(data.comments);
+        $(".dle-comments-navigation").html(data.navigation);
+        if (comm_id && /comment-id-\d+/.test(comm_id)) {
+          document.getElementById("dle-comments-list").querySelector(`#${comm_id}`).scrollIntoView();
+        }
+        w.dispatchEvent(new Event('ad_oncommentdraw'));
+      }
+    );
+    return false;
+  }
+
   var ad_binarySearch = (id, n1, n2) => {
-    return (Promise.all([ad_getComments(n1, news_id), ad_getComments(n2, news_id), ad_getComments(Math.ceil((n1+n2)/2), news_id)])
+    return (Promise.all([ad_getCommentsList(n1, news_id), ad_getCommentsList(n2, news_id), ad_getCommentsList(Math.ceil((n1+n2)/2), news_id)])
         .then((data) => {
+      data = data.map(el => {return el.comments;});
       if (n1 > n2) {
         return -1;
       }
@@ -235,8 +236,8 @@
           targetPage = w.open(href);
           _NEWS_CACHE[href] = targetPage;
           setTimeout(function(){
-            targetPage.document.title = `[ПОИСК]${targetPage.document.title}`;
-          }, 300);
+            targetPage.document.title = `[ПОИСК] ${targetPage.document.title}`;
+          }, 500);
           targetPage.onbeforeunload = function(){
             _NEWS_CACHE[href] = null;
           };
