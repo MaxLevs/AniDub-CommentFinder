@@ -6,6 +6,8 @@ Provide interface for find comment: from the top on anime page, from user's last
 Использован api самого online.anidub.com.
 
 # Использование
+Скачать и установить можно на [greasefork](https://greasyfork.org/ru/scripts/29535-anidub-commentfinder).
+
 1. Для поиска комментариев из __топа__ нужно:
     + перейти на страницу с аниме, на которой искомые комменты расположены
     + спуститься к топу и нажать на кнопку "__ИСКАТЬ?__".
