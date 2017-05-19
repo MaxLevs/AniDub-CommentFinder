@@ -38,11 +38,7 @@
       this.animToken = setInterval((()=>{
         let state = false;
         return ()=>{
-          if (state) {
-            this.link.style.backgroundColor = '#c73f4c';
-          } else {
-            this.link.style.backgroundColor = '#565656';
-          }
+          this.link.style.backgroundColor = state ? '#c73f4c' : '#565656';
           state = !state;
         };
       })(), dur+1);
@@ -219,7 +215,7 @@
         indicatorMar.style.height = `${mar}px`;
       }
       {
-        indicatorBox.style.height = `${mar + (+indicator.link.style.height.match(/\d*/)[0])}px`;
+        indicatorBox.style.height = `${mar + (+indicator.link.style.height.match(/\d+/)[0])}px`;
         indicatorBox.style.backgroundColor = "#fff";
       }
 
